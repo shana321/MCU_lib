@@ -1,0 +1,152 @@
+C51 COMPILER V9.00   MAIN                                                                  07/26/2018 16:32:03 PAGE 1   
+
+
+C51 COMPILER V9.00, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: D:\Keil_v5\C51\BIN\C51.EXE main.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\main
+                    -.lst) TABS(2) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          #include <reg51.h>
+   2          
+   3          #include "PID.h"
+   4          
+   5          
+   6          
+   7          typedef unsigned long uint32_t;
+   8          typedef unsigned int uint16_t;
+   9          typedef unsigned char uint8_t;
+  10          
+  11          uint32_t millis();
+  12          
+  13          
+  14          uint32_t tick = 0;
+  15          
+  16          
+  17          idata PID_Class adout;
+  18          
+  19          
+  20          uint8_t PWM = 0;
+  21          uint16_t Roll_Number = 0,Roll_Clone = 0;
+  22          
+  23          void main()
+  24          {
+  25   1        double input,output,set = 200;
+  26   1        //AUXR &= 0x7F;   //∂® ±∆˜ ±÷”12Tƒ£ Ω
+  27   1        TMOD &= 0xF0;   //…Ë÷√∂® ±∆˜ƒ£ Ω
+  28   1        TMOD |= 0x01;   //…Ë÷√∂® ±∆˜ƒ£ Ω
+  29   1        TL0 = 0x18;   //…Ë÷√∂® ±≥ı÷µ
+  30   1        TH0 = 0xFC;   //…Ë÷√∂® ±≥ı÷µ
+  31   1        TF0 = 0;    //«Â≥˝TF0±Í÷æ
+  32   1        TR0 = 1;    //∂® ±∆˜0ø™ ºº∆ ±
+  33   1        
+  34   1        ET0 = 1;
+  35   1        
+  36   1        
+  37   1        TMOD &= 0x0F;   //…Ë÷√∂® ±∆˜ƒ£ Ω
+  38   1        TMOD |= 0x20;   //…Ë÷√∂® ±∆˜ƒ£ Ω
+  39   1        TL1 = 0x06;   //…Ë÷√∂® ±≥ı÷µ
+  40   1        TH1 = 0x06;   //…Ë÷√∂® ±÷ÿ‘ÿ÷µ
+  41   1        TF1 = 0;    //«Â≥˝TF1±Í÷æ
+  42   1        TR1 = 1;    //∂® ±∆˜1ø™ ºº∆ ±
+  43   1        
+  44   1        ET1 = 1;
+  45   1        
+  46   1        
+  47   1        IT0 = 1;
+  48   1        EX0 = 1;
+  49   1        
+  50   1        
+  51   1        EA = 1;
+  52   1        
+  53   1        /********************************
+  54   1         ◊œ»£¨‘ı√¥»∑∂®º∆À„÷‹∆⁄£¨¥Û∏≈ «œµÕ≥¥” ‰≥ˆøÿ÷∆µΩ…œ…˝µΩ ‰≥ˆøÿ÷∆µƒ60%-80%÷Æº‰µƒ ±º‰(ø…“‘ ”œµÕ≥≤ªÕ¨∂¯µ˜Ω⁄)
+C51 COMPILER V9.00   MAIN                                                                  07/26/2018 16:32:03 PAGE 2   
+
+  55   1        eg:æŸ¿˝◊”:º”»»∆˜:Œ“ ‰≥ˆ“ª∏ˆøÿ÷∆ ±»»Á «X,æ≠π˝Œﬁœﬁ≥§µƒ ±º‰£¨Œ¬∂»Õ£¡Ù‘⁄Y£¨ƒ«√¥¥Û∏≈ «»°Œ¬∂»…œ…˝µΩ0.6Y-0.8Yµƒ’
+             -‚∏ˆ ±º‰£¨
+  56   1        ”…”⁄”––©œµÕ≥∑«œﬂ–‘≥Ã∂»∫‹∏ﬂ «√›∫Ø ˝µƒ±‰ªØ£¨’‚∏ˆ ±∫Ú£¨“™¥ÔµΩ◊Ó∫√µƒøÿ÷∆–ßπ˚£¨Œ“ª·‘ˆº”º∆À„µƒ ±º‰º‰∏Ù
+  57   1        
+  58   1        »∑∂®Kp,Ki£¨Kd£¨“ª∞„”√≤ªµΩKdæÕø…“‘”–∫‹∫√µƒøÿ÷∆–ßπ˚£¨KdŒ““ª∞„”√”⁄”–¥Û÷Õ∫ÛµƒœµÕ≥£¨¿˝»Áøÿ÷∆Œ¬∂»£¨
+  59   1        Kdø…“‘‘⁄Œ¬∂»ªπ√ª”–µΩ¥Ô…Ë÷√÷µµƒ ±∫ÚæÕºı…Ÿøÿ÷∆ ‰≥ˆ
+  60   1        
+  61   1         ◊œ»£¨∞—Ki£¨Kd…Ë÷√≥…0£¨≤ª∂œº”¥ÛKp÷±µΩ≤˙…˙’Òµ¥£¨◊˜Œ™∆Ù’Òµ„£¨
+  62   1        »ª∫Û:Ki¬˝¬˝º”£¨º”µΩø™ º’Òµ¥£¨»°∆‰80%-90%
+  63   1        
+  64   1        »Áπ˚œµÕ≥øÿ÷∆—œ÷ÿ÷Õ∫Û£¨¬˝¬˝µƒ‘ˆº”Kdµƒ÷µ£¨ πµ√µ⁄“ª¥Œ≥¨µ˜∫Õµ⁄∂˛¥Œµƒ∑Â±»4±»1 «◊Ó¿ÌœÎµƒ
+  65   1        
+  66   1        PIDÕÍ’˚¿Î…¢π´ Ω:OUT = kp * error + (ki * T)/Ti * °∆error + kd *Td/T * °˜error
+  67   1      
+  68   1        T:PIDº∆À„≤…—˘÷‹∆⁄£¨Ti:ª˝∑÷ ±º‰ Td:Œ¢∑÷ ±º‰ error:≤…—˘∫Õ∆⁄Õ˚÷µµƒ≤Ó    °∆error:¿€ª˝µƒerror 
+  69   1      
+  70   1        °˜error:¡Ω¥Œerrorµƒ≤Ó 
+  71   1        
+  72   1        *********************************/
+  73   1        new_PID(&adout,&input,&output,&set,1.4,0.1,0,P_ON_E,DIRECT);//’˝≥£ƒ£ Ω£¨’˝œ‡πÿ
+  74   1        PID_Initialize(&adout);//≥ı ºªØ
+  75   1        
+  76   1        PID_SetMode(&adout,AUTOMATIC);//◊‘∂Øº∆À„ƒ£ Ω
+  77   1        
+  78   1        PID_SetSampleTime(&adout,3000);//…Ë÷√PIDº∆À„÷‹∆⁄Œ™5000ms
+  79   1        while(1)
+  80   1        {
+  81   2          input = (double)Roll_Number;//≤…—˘◊™ÀŸ÷‹∆⁄
+  82   2          if(PID_Compute(&adout) == true)//¥Û∏≈ŒÂ¥Œ≤…—˘º∆À„“ª¥Œ
+  83   2          {
+  84   3            PWM = (uint8_t)output;
+  85   3          }
+  86   2        }
+  87   1      }
+  88          uint32_t millis()
+  89          {
+  90   1        return tick;
+  91   1      }
+  92          void EXIT0_IRQ() interrupt 0
+  93          {
+  94   1        Roll_Clone++;
+  95   1      }
+  96          void Timer1_IRQ() interrupt 3
+  97          {
+  98   1        static uint8_t i=0;
+  99   1        if(PWM >= i)
+ 100   1        {
+ 101   2          P2 &= ~(0x01);//µÕ
+ 102   2        }
+ 103   1        else
+ 104   1        {
+ 105   2          P2 |= 0x01;//∏ﬂ
+ 106   2        }
+ 107   1        i++;
+ 108   1      }
+ 109          void Timer0_IRQ() interrupt 1 //1ms
+ 110          {
+ 111   1        static uint16_t i = 0;
+ 112   1        TL0 = 0x18;   //…Ë÷√∂® ±≥ı÷µ
+ 113   1        TH0 = 0xFC;   //…Ë÷√∂® ±≥ı÷µ
+ 114   1        
+ 115   1        i++;
+C51 COMPILER V9.00   MAIN                                                                  07/26/2018 16:32:03 PAGE 3   
+
+ 116   1        tick++;
+ 117   1        if(i == 1000)
+ 118   1        {
+ 119   2          i=0;
+ 120   2          Roll_Number = Roll_Clone;
+ 121   2          Roll_Clone = 0;
+ 122   2        }
+ 123   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    322    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     12      12
+   IDATA SIZE       =     61    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,51 @@
+C51 COMPILER V9.54   KEYBOARD                                                              03/07/2018 00:01:54 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE KEYBOARD
+OBJECT MODULE PLACED IN .\Objects\keyboard.obj
+COMPILER INVOKED BY: D:\Keil_v5\C51\BIN\C51.EXE keyboard.c OPTIMIZE(0,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\
+                    -keyboard.lst) TABS(2) OBJECT(.\Objects\keyboard.obj)
+
+line level    source
+
+   1          #include "keyboard.h"
+   2          void KeyBoard_Init(Keyscan_Type *myself,Key_Read_cb key_read_cb,Key_Callback key_cb)
+   3          {
+   4   1        myself->key_read_cb = key_read_cb;
+   5   1        myself->FirstPinState = myself->key_read_cb(myself);//ÉÏµç¶ÁµçÆ½£¬×÷Îª³õÊ¼°´ÏÂµÄµçÆ½;
+   6   1        myself->key_cb = key_cb;//»Øµ÷
+   7   1        myself->LastPinState = myself->FirstPinState;//Ä¬ÈÏÊÇ³õÊ¼»¯µÄÊ±ºòÎªÊÍ·Å×´Ì¬
+   8   1      }
+   9          Key_State KeyScan(Keyscan_Type* myself)
+  10          {
+  11   1        GPIO_PinState key = myself->key_read_cb(myself);
+  12   1        Key_State returnkey;
+  13   1        
+  14   1        if(myself->LastPinState == key)//ÉÏÒ»´ÎµÄµçÆ½ºÍÕâ´ÎÒ»Ñù
+  15   1        {
+  16   2          (key == myself->FirstPinState)?(returnkey=KEY_UPED):(returnkey=KEY_DOWNED);//ÅÐ¶ÏÊÇ¿ÕÏÐµçÆ½»¹ÊÇ¶¯×÷µçÆ½,
+             -¿ÕÏÐµçÆ½·µ»ØÒÑ¾­ÊÍ·Å£¬¶¯×÷µçÆ½·µ»ØÒÑ¾­°´ÏÂ
+  17   2        }
+  18   1        else
+  19   1        {
+  20   2          (key == myself->FirstPinState)?(returnkey=KEY_UPING):(returnkey=KEY_DOWNING);////ÅÐ¶ÏÊÇ¿ÕÏÐµçÆ½»¹ÊÇ¶¯×÷µ
+             -çÆ½,¿ÕÏÐµçÆ½ÓÉ¶¯×÷µçÆ½×ª»»µ½¿ÕÏÐµçÆ½Ë²¼ä£¬±íÊ¾¸Õ¸ÕÊÍ·Å£¬·´Ö®
+  21   2        }
+  22   1        myself->LastPinState = key;
+  23   1        myself->key_cb(myself,returnkey);
+  24   1        return returnkey;
+  25   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    315    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     14    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

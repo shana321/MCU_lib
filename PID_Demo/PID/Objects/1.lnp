@@ -1,0 +1,4 @@
+".\Objects\PID.obj",
+".\Objects\main.obj" 
+TO ".\Objects\1.omf" 
+PRINT(".\Listings\1.m51") RAMSIZE(256) 

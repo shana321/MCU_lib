@@ -1,0 +1,145 @@
+C51 COMPILER V9.54   DHT22                                                                 02/14/2018 03:02:18 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE DHT22
+OBJECT MODULE PLACED IN .\Objects\DHT22.obj
+COMPILER INVOKED BY: D:\Keil_v5\C51\BIN\C51.EXE DHT22.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\DHT
+                    -22.lst) TABS(2) OBJECT(.\Objects\DHT22.obj)
+
+line level    source
+
+   1          #include "DHT22.h"
+   2          
+   3          void DHT22_Init(dht22_t *dht,dht22_msg_cb dht_cb)
+   4          {
+   5   1        dht->gpio_and_delay_cb = dht_cb;
+   6   1        dht->gpio_and_delay_cb(dht,DHT22_MSG_SDA_HIGH);
+   7   1        dht->gpio_and_delay_cb(dht,DHT22_MSG_2S_DELAY);//保证上电2S越过DHT22不稳定状态
+   8   1      }
+   9          uint8_t DHT22_Read(dht22_t *dht)
+  10          {
+  11   1        uint8_t i,j,sum;
+  12   1        dht->DHT22_RXD_Buff[0] = dht->DHT22_RXD_Buff[1] = dht->DHT22_RXD_Buff[2] = dht->DHT22_RXD_Buff[3] = dht->
+             -DHT22_RXD_Buff[4] = 0;
+  13   1        dht->gpio_and_delay_cb(dht,DHT22_MSG_SDA_HIGH);//拉高总线
+  14   1        dht->gpio_and_delay_cb(dht,DHT22_MSG_1MS_DELAY);//延时1ms
+  15   1        dht->gpio_and_delay_cb(dht,DHT22_MSG_SDA_LOW);//拉低
+  16   1        
+  17   1        dht->gpio_and_delay_cb(dht,DHT22_MSG_18MS_DELAY);//延时1ms
+  18   1      
+  19   1        
+  20   1        dht->gpio_and_delay_cb(dht,DHT22_MSG_SDA_HIGH);//然后拉高
+  21   1        dht->gpio_and_delay_cb(dht,DHT22_MSG_30US_DELAY);//等待30us
+  22   1          //做完一个起始信号，等待从机拉低
+  23   1        if(dht->gpio_and_delay_cb(dht,DHT22_MSG_READ_SDA) == 0)//读到的是低电平，从机响应了，那么等待其变高后准备
+             -接收数据
+  24   1        {
+  25   2          while(!dht->gpio_and_delay_cb(dht,DHT22_MSG_READ_SDA));//等待低电平结束
+  26   2        }
+  27   1        else
+  28   1        {
+  29   2          return 1;//直接返回，避免下面等待高电平陷入死循环
+  30   2        }
+  31   1        while(dht->gpio_and_delay_cb(dht,DHT22_MSG_READ_SDA));//等待80us的高电平结束，然后开始接收
+  32   1        
+  33   1        for(j=0;j<5;j++)
+  34   1        {
+  35   2          for(i=0;i<8;i++)
+  36   2          {
+  37   3            while(!dht->gpio_and_delay_cb(dht,DHT22_MSG_READ_SDA));//等待50us左右的低电平结束
+  38   3            dht->DHT22_RXD_Buff[j] <<=1;
+  39   3            dht->gpio_and_delay_cb(dht,DHT22_MSG_30US_DELAY);//延时1ms
+  40   3            if(dht->gpio_and_delay_cb(dht,DHT22_MSG_READ_SDA))
+  41   3            {
+  42   4              dht->DHT22_RXD_Buff[j] |= 0x01;
+  43   4              while(dht->gpio_and_delay_cb(dht,DHT22_MSG_READ_SDA));//等待高电平结束
+  44   4            }
+  45   3          }
+  46   2        }
+  47   1        
+  48   1        sum = dht->DHT22_RXD_Buff[0] + dht->DHT22_RXD_Buff[1] + dht->DHT22_RXD_Buff[2] + dht->DHT22_RXD_Buff[3];
+  49   1        
+  50   1        if(sum != dht->DHT22_RXD_Buff[4] || sum == 0) return 1;//检查校验和
+  51   1        
+  52   1        return 0;
+C51 COMPILER V9.54   DHT22                                                                 02/14/2018 03:02:18 PAGE 2   
+
+  53   1      }
+  54          uint8_t DHT22_Fget(dht22_t *dht,float *Humi,float *Temp)
+  55          {
+  56   1        
+  57   1        uint16_t t = 0x0000;
+  58   1        uint8_t sum = 0;
+  59   1        sum = dht->DHT22_RXD_Buff[0] + dht->DHT22_RXD_Buff[1] + dht->DHT22_RXD_Buff[2] + dht->DHT22_RXD_Buff[3];
+  60   1        
+  61   1        if(sum != dht->DHT22_RXD_Buff[4] || sum == 0) return 1;//检查校验和
+  62   1        t |= dht->DHT22_RXD_Buff[0];
+  63   1        t <<= 8;
+  64   1        t |= dht->DHT22_RXD_Buff[1];
+  65   1        
+  66   1        *Humi = (float)t/10;
+  67   1        
+  68   1        t = 0x0000;
+  69   1        
+  70   1        t |= dht->DHT22_RXD_Buff[2];
+  71   1        t <<= 8;
+  72   1        t |= dht->DHT22_RXD_Buff[3];
+  73   1        
+  74   1          if(t & 0x8000)
+  75   1        {
+  76   2          t&=~0x8000;
+  77   2          *Temp = -(float)t/10;
+  78   2        }
+  79   1        else
+  80   1        {
+  81   2          *Temp = (float)t/10;
+  82   2        }
+  83   1        return 0;
+  84   1      }
+  85          uint8_t DHT22_Iget(dht22_t *dht,int16_t *Humi,int16_t *Temp)
+  86          {
+  87   1        
+  88   1        int16_t t = 0x0000;
+  89   1        uint8_t sum = 0;
+  90   1        sum = dht->DHT22_RXD_Buff[0] + dht->DHT22_RXD_Buff[1] + dht->DHT22_RXD_Buff[2] + dht->DHT22_RXD_Buff[3];
+  91   1        
+  92   1        if(sum != dht->DHT22_RXD_Buff[4] || sum == 0) return 1;//检查校验和
+  93   1        
+  94   1        t |= dht->DHT22_RXD_Buff[0];
+  95   1        t <<= 8;
+  96   1        t |= dht->DHT22_RXD_Buff[1];
+  97   1        
+  98   1        *Humi = (int16_t)t/10;
+  99   1        
+ 100   1        t = 0x0000;
+ 101   1        
+ 102   1        t |= dht->DHT22_RXD_Buff[2];
+ 103   1        t <<= 8;
+ 104   1        t |= dht->DHT22_RXD_Buff[3];
+ 105   1        if(t & 0x8000)
+ 106   1        {
+ 107   2          t&=~0x8000;
+ 108   2          *Temp = -(int16_t)t/10;
+ 109   2        }
+ 110   1        else
+ 111   1        {
+ 112   2          *Temp = (int16_t)t/10;
+ 113   2        }
+ 114   1        return 0;
+C51 COMPILER V9.54   DHT22                                                                 02/14/2018 03:02:18 PAGE 3   
+
+ 115   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1066    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----      33
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

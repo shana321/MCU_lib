@@ -1,0 +1,242 @@
+C51 COMPILER V9.00   PID                                                                   07/25/2018 10:31:22 PAGE 1   
+
+
+C51 COMPILER V9.00, COMPILATION OF MODULE PID
+OBJECT MODULE PLACED IN .\Objects\PID.obj
+COMPILER INVOKED BY: D:\Keil_v5\C51\BIN\C51.EXE PID.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\PID.l
+                    -st) TABS(2) OBJECT(.\Objects\PID.obj)
+
+line level    source
+
+   1          #include "PID.h"
+   2          //ÐÂ½¨Ò»¸öPID¶ÔÏó£¬º¯Êý²ÎÊý¶ÔÓ¦¶ÔÏóµÄÊôÐÔ
+   3          //mpid:PID¶ÔÏó
+   4          //Input:²É¼¯Á¿
+   5          //Output:Êä³ö¿ØÖÆÁ¿
+   6          //Setpoint:ÉèÖÃÆÚÍûÖµ
+   7          //Kp:±ÈÀý»·½ÚÏµÊý
+   8          //Ki:»ý·Ö»·½ÚÏµÊý
+   9          //Kd:Î¢·Ö»·½ÚÏµÊý
+  10          //Pon:¿ØÖÆÄ£Ê½
+  11          //ControllerDirection:¿ØÖÆ·½Ïò
+  12          //Êµ¼ÊÐ´³ÌÐòµÄÊ±ºòµ÷PID£¬ÆäÊµ¾ÍÊÇµ÷Kp£¬Ki£¬Kd£¬sampletimeËÄ¸ö²ÎÊý
+  13          /********************************
+  14            Ê×ÏÈ£¬ÔõÃ´È·¶¨¼ÆËãÖÜÆÚ£¬´ó¸ÅÊÇÏµÍ³´ÓÊä³ö¿ØÖÆµ½ÉÏÉýµ½Êä³ö¿ØÖÆµÄ60%-80%Ö®¼äµÄÊ±¼ä(¿ÉÒÔÊÓÏµÍ³²»Í¬¶øµ÷½Ú)
+  15            eg:¾ÙÀý×Ó:¼ÓÈÈÆ÷:ÎÒÊä³öÒ»¸ö¿ØÖÆ±ÈÈçÊÇX,¾­¹ýÎÞÏÞ³¤µÄÊ±¼ä£¬ÎÂ¶ÈÍ£ÁôÔÚY£¬ÄÇÃ´´ó¸ÅÊÇÈ¡ÎÂ¶ÈÉÏÉýµ½0.6Y-0.8YµÄÕâ
+             -¸öÊ±¼ä£¬
+  16            ÓÉÓÚÓÐÐ©ÏµÍ³·ÇÏßÐÔ³Ì¶ÈºÜ¸ßÊÇÃÝº¯ÊýµÄ±ä»¯£¬Õâ¸öÊ±ºò£¬Òª´ïµ½×îºÃµÄ¿ØÖÆÐ§¹û£¬ÎÒ»áÔö¼Ó¼ÆËãµÄÊ±¼ä¼ä¸ô
+  17            
+  18            È·¶¨Kp,Ki£¬Kd£¬Ò»°ãÓÃ²»µ½Kd¾Í¿ÉÒÔÓÐºÜºÃµÄ¿ØÖÆÐ§¹û£¬KdÎÒÒ»°ãÓÃÓÚÓÐ´óÖÍºóµÄÏµÍ³£¬ÀýÈç¿ØÖÆÎÂ¶È£¬
+  19            Kd¿ÉÒÔÔÚÎÂ¶È»¹Ã»ÓÐµ½´ïÉèÖÃÖµµÄÊ±ºò¾Í¼õÉÙ¿ØÖÆÊä³ö
+  20            
+  21            Ê×ÏÈ£¬°ÑKi£¬KdÉèÖÃ³É0£¬²»¶Ï¼Ó´óKpÖ±µ½²úÉúÕñµ´£¬×÷ÎªÆôÕñµã£¬
+  22            È»ºó:KiÂýÂý¼Ó£¬¼Óµ½¿ªÊ¼Õñµ´£¬È¡Æä80%-90%
+  23            
+  24            Èç¹ûÏµÍ³¿ØÖÆÑÏÖØÖÍºó£¬ÂýÂýµÄÔö¼ÓKdµÄÖµ£¬Ê¹µÃµÚÒ»´Î³¬µ÷ºÍµÚ¶þ´ÎµÄ·å±È4±È1ÊÇ×îÀíÏëµÄ
+  25            
+  26            PIDÍêÕûÀëÉ¢¹«Ê½:OUT = kp * error + (ki * T)/Ti * ¡Æerror + kd *Td/T * ¡÷error
+  27          
+  28            T:PID¼ÆËã²ÉÑùÖÜÆÚ£¬Ti:»ý·ÖÊ±¼ä Td:Î¢·ÖÊ±¼ä error:²ÉÑùºÍÆÚÍûÖµµÄ²î    ¡Æerror:ÀÛ»ýµÄerror 
+  29          
+  30            ¡÷error:Á½´ÎerrorµÄ²î 
+  31            
+  32            *********************************/
+  33          void new_PID(PID_Class *mpid,PID_type* Input,PID_type* Output,PID_type* Setpoint,PID_type Kp,PID_type Ki,P
+             -ID_type Kd,bool POn, bool ControllerDirection)
+  34          {
+  35   1          mpid->myOutput = Output;//myOutputÊôÐÔ
+  36   1          mpid->myInput = Input;  //myInputÊôÐÔ
+  37   1          mpid->mySetpoint = Setpoint;//mySetpointÊôÐÔ
+  38   1          mpid->inAuto = false;//inAutoÊôÐÔ Ä¬ÈÏÎªÊÖ¶¯Ä£Ê½
+  39   1      
+  40   1          PID_SetOutputLimits(mpid,0,255);        //Ä¬ÈÏÊä³öÏÞ·ù£¬255ÊÇ¸ù¾Ýarduinoµ¥Æ¬»úÉèÖÃµÄ
+  41   1      
+  42   1          mpid->SampleTime = 200;             //Ä¬ÈÏ¼ÆËã¼ä¸ô0.2s£¨200ms£©£¬ÕâÀïÐèÒª¸øPIDÌá¹©1msµÄ¼ÆÊý±äÁ¿£¬200²Å¶ÔÓ¦20
+             -0ms£¬Ò²¾ÍÊÇÊµÏÖPIDmillis()º¯Êý
+  43   1      
+  44   1          PID_SetControllerDirection(mpid,ControllerDirection);//ÉèÖÃ¿ØÖÆ·½Ïò
+  45   1                                                                //DIRECT  0  : PIDÊä³öÔö¼Ó ¿ØÖÆÁ¿Ôö¼Ó
+  46   1                                                                //REVERSE  1 : PIDÊä³öÔö¼Ó£¬¿ØÖÆÁ¿¼õÉÙ  ²Î¿¼¿Õµ÷ÖÆÀä£¬Êä³ö¹¦ÂÊÔö¼Ó£¬¿Õµ÷ÖÆÀäÔ
+             -öÇ¿£¬Ô½Àä
+  47   1          PID_SetTunings(mpid,Kp, Ki, Kd, POn); //ÉèÖÃPID¼ÆËãÊ½¸÷ÏîÏµÊýÒÔ¼°¿ØÖÆÄ£Ê½ÊÇ³¬µ÷»¹ÊÇÕý³£Ä£Ê½
+  48   1      
+  49   1          mpid->lastTime = PIDmillis()-(mpid->SampleTime);  //³õÊ¼»¯lastTime£¬Ê¹µÚÒ»´Î¿ÉÒÔÖ±½Ó¿ªÊ¼PID¼ÆËã
+  50   1      }
+C51 COMPILER V9.00   PID                                                                   07/25/2018 10:31:22 PAGE 2   
+
+  51          //ÉèÖÃPID¼ÆËãÊ½¸÷ÏîÏµÊýÒÔ¼°¿ØÖÆÄ£Ê½ÊÇ³¬µ÷»¹ÊÇÕý³£Ä£Ê½
+  52          //mpid:PID¶ÔÏó
+  53          //Kp:±ÈÀý»·½ÚÏµÊý
+  54          //Ki:»ý·Ö»·½ÚÏµÊý
+  55          //Kd:Î¢·Ö»·½ÚÏµÊý
+  56          //POn:¿ØÖÆÄ£Ê½  P_ON_M(0) ¿ØÖÆ³¬µ÷(²»»á³öÏÖ³¬µ÷£¬»òÕß³¬µ÷Ð¡£¬ÉÏÉýÂý)
+  57          //              P_ON_E(1) Õý³£Ä£Ê½(ÓÐ³¬µ÷£¬ÉÏÉý¸ü¿ì)
+  58          void PID_SetTunings(PID_Class *mpid,PID_type Kp, PID_type Ki, PID_type Kd, bool POn)
+  59          {
+  60   1          PID_type SampleTimeInSec = 0;
+  61   1         if (Kp<0 || Ki<0 || Kd<0) return;
+  62   1      
+  63   1         //mpid->pOn = POn;
+  64   1         mpid->pOnE = POn;
+  65   1      
+  66   1         mpid->dispKp = Kp; mpid->dispKi = Ki; mpid->dispKd = Kd;
+  67   1      
+  68   1         SampleTimeInSec = ((PID_type)mpid->SampleTime)/1000;
+  69   1         mpid->kp = Kp;
+  70   1         mpid->ki = Ki * SampleTimeInSec;
+  71   1         mpid->kd = Kd / SampleTimeInSec;
+  72   1      
+  73   1        if(mpid->controllerDirection ==REVERSE)
+  74   1         {
+  75   2            mpid->kp = (0 - mpid->kp);
+  76   2            mpid->ki = (0 - mpid->kp);
+  77   2            mpid->kd = (0 - mpid->kp);
+  78   2         }
+  79   1      }
+  80          //ÉèÖÃPID¼ÆËãÖÜÆÚ
+  81          //mpid:PID¶ÔÏó
+  82          //NewSampleTime:¼ÆËãÖÜÆÚÎª¶àÉÙ¸öÊ±¼äÆ¬£¨PIDmillis()Öµ1¶ÔÓ¦¶à³¤Ê±¼ä£¬Ò»°ãÈ¡1ms£©
+  83          void PID_SetSampleTime(PID_Class *mpid,Timetick NewSampleTime)
+  84          {
+  85   1        PID_type SampleTimeInSec = 0;
+  86   1         if (NewSampleTime > 0)
+  87   1         {
+  88   2            PID_type ratio  = (PID_type)NewSampleTime
+  89   2                            / (PID_type)mpid->SampleTime;
+  90   2            mpid->ki *= ratio;
+  91   2            mpid->kd /= ratio;
+  92   2            mpid->SampleTime = (Timetick)NewSampleTime;
+  93   2           
+  94   2         
+  95   2      
+  96   2         SampleTimeInSec = ((PID_type)mpid->SampleTime)/1000;
+  97   2         mpid->kp = mpid->dispKp;
+  98   2         mpid->ki = mpid->dispKi * SampleTimeInSec;
+  99   2         mpid->kd = mpid->dispKd / SampleTimeInSec;//ÅäÖÃPIDÏµÊý
+ 100   2           
+ 101   2         mpid->lastTime = PIDmillis()-(mpid->SampleTime);
+ 102   2         }
+ 103   1      }
+ 104          //ÉèÖÃPIDÊä³öÏÞ·ù´óÐ¡
+ 105          //mpid:PID¶ÔÏó
+ 106          //Min:Êä³ö×îÐ¡ÖµÏÞ·ù
+ 107          //Max:Êä³ö×î´óÖµÏÞ·ù
+ 108          void PID_SetOutputLimits(PID_Class *mpid,PID_type Min, PID_type Max)
+ 109          {
+ 110   1         if(Min >= Max) return;
+ 111   1         mpid->outMin = Min;
+ 112   1         mpid->outMax = Max;
+C51 COMPILER V9.00   PID                                                                   07/25/2018 10:31:22 PAGE 3   
+
+ 113   1      
+ 114   1         if(mpid->inAuto)
+ 115   1         {
+ 116   2           if(*(mpid->myOutput) > (mpid->outMax)) *(mpid->myOutput) = (mpid->outMax);
+ 117   2           else if(*(mpid->myOutput) < (mpid->outMin)) *(mpid->myOutput) = (mpid->outMin);
+ 118   2      
+ 119   2           if((mpid->outputSum) > mpid->outMax) (mpid->outputSum)= mpid->outMax;
+ 120   2           else if((mpid->outputSum) < mpid->outMin) mpid->outputSum= mpid->outMin;
+ 121   2         }
+ 122   1      }
+ 123          //ÉèÖÃPIDÄ£Ê½£¨×Ô¶¯»òÊÖ¶¯£©
+ 124          //mpid:PID¶ÔÏó
+ 125          //Mode: AUTOMATIC(1)µ½Ê±¼ä×Ô¶¯ÔËËã
+ 126          //      MANUAL  (0) ÊÖ¶¯
+ 127          void PID_SetMode(PID_Class *mpid,bool Mode)
+ 128          {
+ 129   1          bool newAuto = (Mode == AUTOMATIC);
+ 130   1          if(newAuto && !(mpid->inAuto))
+ 131   1          {  
+ 132   2              PID_Initialize(mpid);
+ 133   2          }
+ 134   1          mpid->inAuto = newAuto;
+ 135   1      }
+ 136          //PID¶ÔÏó³õÊ¼»¯
+ 137          void PID_Initialize(PID_Class *mpid)
+ 138          {
+ 139   1         mpid->outputSum = *(mpid->myOutput);
+ 140   1         mpid->lastInput = *(mpid->myInput);
+ 141   1         if(mpid->outputSum > mpid->outMax) mpid->outputSum = mpid->outMax;
+ 142   1         else if(mpid->outputSum < mpid->outMin) mpid->outputSum = mpid->outMin;
+ 143   1      }
+ 144          //ÉèÖÃPID¿ØÖÆ·½Ïò
+ 145          //Direction:  DIRECT  0  : PIDÊä³öÔö¼Ó ¿ØÖÆÁ¿Ôö¼Ó
+ 146          //            REVERSE  1 : PIDÊä³öÔö¼Ó£¬¿ØÖÆÁ¿¼õÉÙ  ²Î¿¼¿Õµ÷ÖÆÀä£¬Êä³ö¹¦ÂÊÔö¼Ó£¬¿Õµ÷ÖÆÀäÔöÇ¿£¬Ô½Àä
+ 147          void PID_SetControllerDirection(PID_Class *mpid,bool Direction)
+ 148          {
+ 149   1         if(mpid->inAuto && Direction !=mpid->controllerDirection)
+ 150   1         {
+ 151   2            mpid->kp = (0 - mpid->kp);
+ 152   2            mpid->ki = (0 - mpid->ki);
+ 153   2            mpid->kd = (0 - mpid->kd);
+ 154   2         }
+ 155   1         mpid->controllerDirection = Direction;
+ 156   1      }
+ 157          
+ 158          //PID¼ÆËã£¬ÔÚwhileÖÐ²»¶Ïµ÷ÓÃ
+ 159          bool PID_Compute(PID_Class *mpid)
+ 160          {
+ 161   1         PID_type output = 0;
+ 162   1        Timetick now;         //´æ´¢Õâ´ÎÔËÐÐº¯ÊýµÄÊ±¼äµã
+ 163   1        Timetick timeChange;  //´æ´¢ÉÏ´ÎÖ´ÐÐÍêPIDºÍÕâ´Î½øÈëº¯ÊýµÄÊ±¼ä²î
+ 164   1         if(!(mpid->inAuto))  //ÊÖ¶¯¼ÆËãÄ£Ê½ÏÂ¸Ãº¯ÊýÊ§Ð§£¬Ö±½Ó·µ»Øfalse
+ 165   1         {
+ 166   2           return false;
+ 167   2         }
+ 168   1         now = PIDmillis();   //¶ÁÈ¡Ê±¼ä±äÁ¿
+ 169   1         timeChange = (now - mpid->lastTime); //µÃµ½Ê±¼ä²î
+ 170   1         if(timeChange>=(mpid->SampleTime)) //Èç¹ûÊ±¼ä²î´óÓÚµÈÓÚ¼ÆËã¼ä¸ô£¬Ôò¿ªÊ¼PID¼ÆËã
+ 171   1         {
+ 172   2            /*Compute all the working error variables*/
+ 173   2            PID_type input = *(mpid->myInput);  //²É¼¯µ½µÄÊäÈë
+ 174   2            PID_type error = *(mpid->mySetpoint) - input; //²É¼¯ÖµÓëÆÚÍûÖµµÄÆ«²î
+C51 COMPILER V9.00   PID                                                                   07/25/2018 10:31:22 PAGE 4   
+
+ 175   2            PID_type dInput = (input - mpid->lastInput);  //Õâ´Î²É¼¯ÖµÓëÉÏ´Î²É¼¯ÖµµÄ²î£¬¼´¡÷error
+ 176   2            mpid->outputSum+= (mpid->ki * error); //»ý·Ö»·½Ú ÓÉÓÚ»ý·Ö»·½ÚÓëÀúÊ·ÓÐ¹Ø£¬¹ÊoutputSumÊÜÀúÊ·ÖµÓ°Ïì
+ 177   2      
+ 178   2            /*Add Proportional on Measurement, if P_ON_M is specified*/
+ 179   2            if(!(mpid->pOnE)) (mpid->outputSum)-= (mpid->kp) * dInput;  //P_ON_MÄ£Ê½£¨¿ØÖÆ³¬µ÷£©ÏÂ »ý·Ö»·½Ú¼ÓÈë³¬
+             -µ÷¿ØÖÆ
+ 180   2      
+ 181   2            if((mpid->outputSum) > (mpid->outMax)) (mpid->outputSum)= (mpid->outMax); //ÕâÊÇ´øÓÐÏÞ·ù¹¦ÄÜµÄPID£¨·
+             -ÀÖ¹µ÷½Ú¹ý´ó£©£¬³¬¹ý×î´óÏÞÖµÊ±£¬È¡×î´óÏÞÖµ
+ 182   2            else if((mpid->outputSum) < (mpid->outMin)) (mpid->outputSum)= (mpid->outMin);  //µÍÓÚ×îÐ¡ÏÞÖµÊ±£¬È¡×
+             -îÐ¡ÏÞÖµ
+ 183   2      
+ 184   2            /*Add Proportional on Error, if P_ON_E is specified*/
+ 185   2            if(mpid->pOnE) output = mpid->kp * error;                   //P_ON_EÄ£Ê½(Õý³£Ä£Ê½)ÏÂ£¬outputÖ±½Ó¸³Öµ±ÈÀý»·½Ú²
+             -¿·Ö
+ 186   2            else output = 0;                                            //P_ON_MÄ£Ê½(¿ØÖÆ³¬µ÷)ÏÂ£¬ÓÉÓÚÔÚ»ý·Ö»·½ÚÖÐ¼ÓÈëÁË±ÈÀý»·½Ú¿ØÖÆ£¬
+             -ÕâÀïoutputÖ±½Ó¸³Öµ0
+ 187   2      
+ 188   2            /*Compute Rest of PID Output*/ //¼ÆËãPIDÊ½µÄÊ£ÓàÏî£¨kd£¬Î¢·Ö»·½Ú£© 
+ 189   2            output += mpid->outputSum - mpid->kd * dInput;  //P_ON_EÄ£Ê½ÏÂ£¬outputÔÚÖ´ÐÐÕâÌõÓï¾äÖ®Ç°°üÀ¨ÁËkp£¨±ÈÀ
+             -ý»·½Ú£©²¿·Ö£¬outputSum°üÀ¨ÁË»ý·Ö²¿·Ö£¨ÓëÀúÊ·ÖµÓÐ¹Ø£©
+ 190   2                                                            //P_ON_MÄ£Ê½ÏÂ£¬outputÎª0£¬outputSumÊÇÊÜ±ÈÀý»·½ÚÓ°ÏìµÄ»ý·Ö²¿·Ö£¬Ò²¾ÍÊÇ°üÀ¨ÁËÁ½Õ
+             -ß
+ 191   2            if(output > mpid->outMax) output = mpid->outMax;  //×î´óÖµÏÞ·ù
+ 192   2            else if(output < mpid->outMin) output = mpid->outMin; //×îÐ¡ÖµÏÞ·ù
+ 193   2            *(mpid->myOutput) = output; //´æ´¢output¼ÆËã½á¹û
+ 194   2      
+ 195   2            /*Remember some variables for next time*/
+ 196   2            mpid->lastInput = input;  //±£´æ´Ë´Î²É¼¯Öµ¡£ÒÔ±ãÏÂ´ÎÇó¡÷error
+ 197   2            mpid->lastTime = now; //±£´æ´Ë´Î¼ÆËãÍê±ÏµÄÊ±¼äµã£¬ÒÔ±ãÏÂ´ÎÅÐ¶ÏÊÇ·ñµ½ÁË¼ÆËãÖÜÆÚ
+ 198   2            return true;    //¼ÆËãÍê±Ï£¬·µ»Øtrue
+ 199   2         }
+ 200   1         else return false; //Î´µ½¼ÆËãÖÜÆÚ£¬Ö±½Ó·µ»Øfalse
+ 201   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   2135    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----     110
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
