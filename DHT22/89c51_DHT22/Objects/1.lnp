@@ -1,4 +1,0 @@
-".\Objects\main.obj",
-".\Objects\DHT22.obj" 
-TO ".\Objects\1.omf" 
-PRINT(".\Listings\1.m51") RAMSIZE(256) 
